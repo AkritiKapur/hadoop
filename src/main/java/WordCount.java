@@ -51,14 +51,16 @@ public class WordCount {
 
         private Map<String, Boolean> getStopWords() {
             String fileName = "stopWords.txt";
-//            File file = new File(classLoader.getResource(fileName).getFile());
+            File file = new File(classLoader.getResource(fileName).getFile());
 
             Map<String, Boolean> stopWords = new HashMap<>();
 
             // File reading code taken from https://www.mkyong.com/java8/java-8-stream-read-a-file-line-by-line/
             //read file into stream, try-with-resources
-            try (Stream<String> lines = Files.lines(Paths.get(classLoader.getResource(fileName).getPath()))) {
-                lines.map(line -> stopWords.put(line, true));
+            try (Stream<String> lines = Files.lines(Paths.get(file.toURI()))) {
+                lines.forEach(
+                        line -> stopWords.put(line, true)
+                );
             } catch (IOException e) {
                 e.printStackTrace();
             }

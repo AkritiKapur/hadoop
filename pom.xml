@@ -29,5 +29,13 @@
             <version>2.8.4</version>
         </dependency>
     </dependencies>
+    <build>
+        <resources>
+            <resource>
+                <directory>src/resources</directory>
+            </resource>
+        </resources>
+    </build>
+
 
 </project>
