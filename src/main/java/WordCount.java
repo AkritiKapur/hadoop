@@ -1,3 +1,4 @@
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -24,6 +25,8 @@ public class WordCount {
 
         private final static IntWritable one = new IntWritable(1);
         private Text word = new Text();
+        ClassLoader classLoader = getClass().getClassLoader();
+
 
         public void map(Object key, Text value, Context context
         ) throws IOException, InterruptedException {
@@ -33,7 +36,7 @@ public class WordCount {
                 word.set(itr.nextToken());
                 String sanitizedWord = getSanitizedWord(word.toString());
                 if( !sanitizedWord.isEmpty() && !isStopWord(sanitizedWord, stopWords)) {
-                    context.write(word, one);
+                    context.write(new Text(sanitizedWord), one);
                 }
             }
         }
@@ -48,11 +51,13 @@ public class WordCount {
 
         private Map<String, Boolean> getStopWords() {
             String fileName = "stopWords.txt";
+//            File file = new File(classLoader.getResource(fileName).getFile());
+
             Map<String, Boolean> stopWords = new HashMap<>();
 
             // File reading code taken from https://www.mkyong.com/java8/java-8-stream-read-a-file-line-by-line/
             //read file into stream, try-with-resources
-            try (Stream<String> lines = Files.lines(Paths.get(fileName))) {
+            try (Stream<String> lines = Files.lines(Paths.get(classLoader.getResource(fileName).getPath()))) {
                 lines.map(line -> stopWords.put(line, true));
             } catch (IOException e) {
                 e.printStackTrace();
@@ -87,8 +92,8 @@ public class WordCount {
         job.setReducerClass(IntSumReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
-        FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        FileInputFormat.addInputPath(job, new Path("input.txt"));
+        FileOutputFormat.setOutputPath(job, new Path("/home/akriti/output"));
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
 }
