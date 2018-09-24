@@ -181,9 +181,11 @@ public class WordCount {
             tm.put(key, list);
 
             for(StringSort ss: list) {
+                /*
                 if (g_counter > 20) {
                     break;
                 }
+                */
                 //System.out.println(ss.getName());
                 //global_list.add(ss);
                 context.write(key, new Text(ss.getName()));
