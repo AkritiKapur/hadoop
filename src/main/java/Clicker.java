@@ -1,6 +1,6 @@
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -9,14 +9,12 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.StringTokenizer;
 
 public class Clicker {
     public static class TokenizerMapper
-            extends Mapper<Object, Text, Text, IntWritable> {
+            extends Mapper<Object, Text, Text, LongWritable> {
 
-        private final static IntWritable one = new IntWritable(1);
         private Text word = new Text();
         ClassLoader classLoader = getClass().getClassLoader();
 
@@ -26,7 +24,7 @@ public class Clicker {
             while (itr.hasMoreTokens()) {
                 word.set(itr.nextToken());
                 Text text = new Text(getTime(word.toString()));
-                context.write(text, new IntWritable(getRevenue(word.toString())));
+                context.write(text, new LongWritable(getRevenue(word.toString())));
             }
         }
 
@@ -43,15 +41,15 @@ public class Clicker {
         }
     }
 
-    public static class IntSumReducer
-            extends Reducer<Text, IntWritable, Text, IntWritable> {
-        private IntWritable result = new IntWritable();
+    public static class LongSumReducer
+            extends Reducer<Text, LongWritable, Text, LongWritable> {
+        private LongWritable result = new LongWritable();
 
-        public void reduce(Text key, Iterable<IntWritable> values,
+        public void reduce(Text key, Iterable<LongWritable> values,
                            Context context
         ) throws IOException, InterruptedException {
             int sum = 0;
-            for (IntWritable val : values) {
+            for (LongWritable val : values) {
                 sum += val.get();
             }
             result.set(sum);
@@ -64,10 +62,10 @@ public class Clicker {
         Job job = Job.getInstance(conf, "word count");
         job.setJarByClass(Clicker.class);
         job.setMapperClass(Clicker.TokenizerMapper.class);
-        job.setCombinerClass(Clicker.IntSumReducer.class);
-        job.setReducerClass(Clicker.IntSumReducer.class);
+        job.setCombinerClass(Clicker.LongSumReducer.class);
+        job.setReducerClass(Clicker.LongSumReducer.class);
         job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(IntWritable.class);
+        job.setOutputValueClass(LongWritable.class);
         FileInputFormat.addInputPath(job, new Path("buy.txt"));
         FileOutputFormat.setOutputPath(job, new Path("/home/akriti/output1"));
         System.exit(job.waitForCompletion(true) ? 0 : 1);
