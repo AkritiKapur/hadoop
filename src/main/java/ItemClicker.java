@@ -78,12 +78,12 @@ public class ItemClicker {
     public static  class SortReducer
             extends Reducer<IntWritable, Text, Text, IntWritable> {
 
-        int mCount = 0;
+        int mCount = 1;
 
         // Source of finding top k - http://kamalnandan.com/hadoop/how-to-find-top-n-values-using-map-reduce/
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            mCount = 0;
+            mCount = 1;
         }
 
         public void reduce(IntWritable key, Iterable<Text> values, Context context)
