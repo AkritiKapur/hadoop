@@ -50,7 +50,7 @@ public class WordCount {
         }
 
         private Map<String, Boolean> getStopWords() {
-            String fileName = "stopWords.txt";
+            String fileName = "/home/hadoop/stopWords.txt";
             //String fileName = "s3://wordcountamkap/datasets/stopwords";
             //File file = new File(classLoader.getResource(fileName).getFile());
             File file = new File(fileName);
@@ -66,6 +66,9 @@ public class WordCount {
                 e.printStackTrace();
             }
 
+            for(String key: stopWords.keySet()) {
+                System.out.println(key);
+            }
             return stopWords;
         }
     }
