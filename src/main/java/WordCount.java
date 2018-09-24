@@ -9,14 +9,9 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Stream;
 
-//import org.apache.hadoop.io.IntWritable;
 
 public class WordCount {
 
@@ -25,17 +20,32 @@ public class WordCount {
 
         private final static IntWritable one = new IntWritable(1);
         private Text word = new Text();
-        ClassLoader classLoader = getClass().getClassLoader();
+
+        private final List<String> stopWords = Arrays.asList("a", "about", "above", "after", "again", "against", "all",
+                "am", "an", "and", "any", "are", "arent", "as", "at", "be", "because", "been", "before", "being",
+                "below", "between", "both", "but", "by", "cant", "cannot", "could", "couldnt", "did", "didnt", "do",
+                "does", "doesnt", "doing", "dont", "down", "during", "each", "few", "for", "from", "further", "had",
+                "hadnt", "has", "hasnt", "have", "havent", "having", "he", "hed", "hell", "hes", "her", "here",
+                "heres", "hers", "herself", "him", "himself", "his", "how", "hows", "i", "id", "ill", "im", "ive",
+                "if", "in", "into", "is", "isnt", "it", "its", "its", "itself", "lets", "me", "more", "most", "mustnt",
+                "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our",
+                "ours", "ourselves", "out", "over", "own", "same", "shant", "she", "shed", "shell", "shes", "should",
+                "shouldnt", "so", "some", "such", "than", "that", "thats", "the", "their", "theirs", "them",
+                "themselves", "then", "there", "theres", "these", "they", "theyd", "theyll", "theyre", "theyve",
+                "this", "those", "through", "to", "too", "under", "until", "up", "very", "was", "wasnt", "we", "wed",
+                "well", "were", "weve", "were", "werent", "what", "whats", "when", "whens", "where", "wheres", "which",
+                "while", "who", "whos", "whom", "why", "whys", "with", "wont", "would", "wouldnt", "you", "youd",
+                "youll", "youre", "youve", "your", "yours", "yourself", "yourselves");
 
 
         public void map(Object key, Text value, Context context
         ) throws IOException, InterruptedException {
             StringTokenizer itr = new StringTokenizer(value.toString());
-            Map<String, Boolean> stopWords = getStopWords();
+            Map<String, Boolean> sW = getStopWords(stopWords);
             while (itr.hasMoreTokens()) {
                 word.set(itr.nextToken());
                 String sanitizedWord = getSanitizedWord(word.toString());
-                if( !sanitizedWord.isEmpty() && !isStopWord(sanitizedWord, stopWords)) {
+                if( !sanitizedWord.isEmpty() && !isStopWord(sanitizedWord, sW)) {
                     context.write(new Text(sanitizedWord), one);
                 }
             }
@@ -49,24 +59,13 @@ public class WordCount {
             return stopWords.getOrDefault(word, false);
         }
 
-        private Map<String, Boolean> getStopWords() {
-            String fileName = "stopWords.txt";
-            //String fileName = "s3://wordcountamkap/datasets/stopwords";
-            //File file = new File(classLoader.getResource(fileName).getFile());
-            File file = new File(fileName);
-            Map<String, Boolean> stopWords = new HashMap<>();
-
-            // File reading code taken from https://www.mkyong.com/java8/java-8-stream-read-a-file-line-by-line/
-            //read file into stream, try-with-resources
-            try (Stream<String> lines = Files.lines(Paths.get(file.toURI()))) {
-                lines.forEach(
-                        line -> stopWords.put(line, true)
-                );
-            } catch (IOException e) {
-                e.printStackTrace();
+        private Map<String, Boolean> getStopWords(List<String> stopWords) throws IOException {
+            Map<String, Boolean> stopMap = new HashMap<>();
+            for(String line: stopWords) {
+                stopMap.put(line, true);
             }
 
-            return stopWords;
+            return stopMap;
         }
     }
 
@@ -173,7 +172,6 @@ public class WordCount {
             while(iter.hasNext()) {
                 Text t = iter.next();
                 list.add(new StringSort(t.toString()));
-                //System.out.println(t);
                 //context.write(key, t);
             }
 
@@ -225,13 +223,9 @@ public class WordCount {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
         Path outputPath = new Path(args[1]);
-        //Path outputPath = new Path("/home/amith/output");
         FileInputFormat.addInputPath(job, new Path(args[0]));
-        //FileInputFormat.addInputPath(job, new Path("input.txt"));
         FileOutputFormat.setOutputPath(job, outputPath);
         outputPath.getFileSystem(conf).delete(outputPath);
-        //System.out.println("Args 0 " + args[0] + " Args 1 " + args[1] + " Args 2 " + args[2] + " Args 3 " + args[3]);
-        //System.exit(job.waitForCompletion(true) ? 0 : 1);
         int jobStatus = job.waitForCompletion(true) ? 0:1;
         if (jobStatus == 0) {
 
@@ -246,7 +240,6 @@ public class WordCount {
             job2.setOutputKeyClass(IntWritable.class);
             job2.setOutputValueClass(Text.class);
             Path outputPath1 = new Path(args[2]);
-            //Path outputPath1 = new Path("/home/amith/output_final");
             FileInputFormat.addInputPath(job2, outputPath);
             FileOutputFormat.setOutputPath(job2, outputPath1);
             outputPath1.getFileSystem(conf2).delete(outputPath1, true);
