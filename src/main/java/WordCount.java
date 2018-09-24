@@ -50,8 +50,8 @@ public class WordCount {
         }
 
         private Map<String, Boolean> getStopWords() {
-            //String fileName = "stopWords.txt";
-            String fileName = "s3://wordcountamkap/datasets/stopwords";
+            String fileName = "stopWords.txt";
+            //String fileName = "s3://wordcountamkap/datasets/stopwords";
             //File file = new File(classLoader.getResource(fileName).getFile());
             File file = new File(fileName);
             Map<String, Boolean> stopWords = new HashMap<>();
@@ -99,7 +99,7 @@ public class WordCount {
             while(str.hasMoreTokens()) {
                   Text t0 = new Text(str.nextToken());
 //                System.out.println(t0.toString());
-                System.out.println("fdkjgkd");
+                //System.out.println("fdkjgkd");
                   IntWritable t1 = new IntWritable(Integer.parseInt(str.nextToken()));
                   context.write(t1, t0);
             }
@@ -113,13 +113,21 @@ public class WordCount {
     public static class StringSort{
 
             private String name;
+            private IntWritable iw;
+
             public StringSort(String name) {
                 this.name = name;
+                //this.iw = iw;
             }
 
             public String getName() {
                 return this.name;
             }
+
+            public IntWritable getKey() {
+                return this.iw;
+            }
+
             public static Comparator<StringSort> StuNameComparator = new Comparator<StringSort>() {
 
 
@@ -140,11 +148,27 @@ public class WordCount {
     public static  class SortReducer
             extends Reducer<IntWritable, Text, IntWritable, Text> {
 
+        private ArrayList<StringSort> global_list = new ArrayList<StringSort>();
+        private TreeMap<IntWritable, List<StringSort>> tm;
+        int g_counter;
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            tm = new TreeMap<IntWritable, List<StringSort>>(new Comparator<IntWritable>() {
+
+                @Override
+                public int compare(IntWritable o1, IntWritable o2) {
+                    return o2.compareTo(o1);
+                }
+            });
+
+            g_counter = 0;
+        }
+
         public void reduce(IntWritable key, Iterable<Text> values, Context context)
                 throws  IOException, InterruptedException {
             System.out.println();
             System.out.println(key);
-            ArrayList<StringSort>  list = new ArrayList<StringSort>();
+            ArrayList<StringSort>    list = new ArrayList<StringSort>();
             Iterator<Text> iter = values.iterator();
             while(iter.hasNext()) {
                 Text t = iter.next();
@@ -152,14 +176,41 @@ public class WordCount {
                 //System.out.println(t);
                 //context.write(key, t);
             }
+
             Collections.sort(list, StringSort.StuNameComparator);
+            tm.put(key, list);
 
             for(StringSort ss: list) {
+                if (g_counter > 20) {
+                    break;
+                }
                 //System.out.println(ss.getName());
+                //global_list.add(ss);
                 context.write(key, new Text(ss.getName()));
+                g_counter++;
             }
+
+
         }
-    }
+
+        /*
+        @Override
+        protected void cleanup(Context context) throws IOException, InterruptedException {
+            int counter = 0;
+            for (IntWritable key: tm.keySet()) {
+                for(StringSort ss: tm.get(key)) {
+                    if (counter > 200) {
+                        break;
+                    }
+                     else   {
+                            context.write(key, new Text(ss.getName()));
+                            counter++;
+                        }
+                    }
+                }
+            }
+            */
+        }
 
     public static void main(String[] args) throws Exception {
 
@@ -172,7 +223,9 @@ public class WordCount {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
         Path outputPath = new Path(args[1]);
+        //Path outputPath = new Path("/home/amith/output");
         FileInputFormat.addInputPath(job, new Path(args[0]));
+        //FileInputFormat.addInputPath(job, new Path("input.txt"));
         FileOutputFormat.setOutputPath(job, outputPath);
         outputPath.getFileSystem(conf).delete(outputPath);
         //System.out.println("Args 0 " + args[0] + " Args 1 " + args[1] + " Args 2 " + args[2] + " Args 3 " + args[3]);
@@ -191,6 +244,7 @@ public class WordCount {
             job2.setOutputKeyClass(IntWritable.class);
             job2.setOutputValueClass(Text.class);
             Path outputPath1 = new Path(args[2]);
+            //Path outputPath1 = new Path("/home/amith/output_final");
             FileInputFormat.addInputPath(job2, outputPath);
             FileOutputFormat.setOutputPath(job2, outputPath1);
             outputPath1.getFileSystem(conf2).delete(outputPath1, true);
