@@ -91,15 +91,10 @@ public class WordCount {
             extends Mapper<Object, Text, IntWritable, Text> {
 
         public void map(Object key, Text value, Context context) throws  IOException, InterruptedException {
-//
-//          System.out.println(value);
 
             StringTokenizer str = new StringTokenizer(value.toString());
-//            System.out.println(str);
             while(str.hasMoreTokens()) {
                   Text t0 = new Text(str.nextToken());
-//                System.out.println(t0.toString());
-                //System.out.println("fdkjgkd");
                   IntWritable t1 = new IntWritable(Integer.parseInt(str.nextToken()));
                   context.write(t1, t0);
             }
@@ -146,7 +141,7 @@ public class WordCount {
         }
 
     public static  class SortReducer
-            extends Reducer<IntWritable, Text, IntWritable, Text> {
+            extends Reducer<IntWritable, Text, Text, IntWritable> {
 
         private ArrayList<StringSort> global_list = new ArrayList<StringSort>();
         private TreeMap<IntWritable, List<StringSort>> tm;
@@ -161,13 +156,11 @@ public class WordCount {
                 }
             });
 
-            g_counter = 0;
+            g_counter = 1;
         }
 
         public void reduce(IntWritable key, Iterable<Text> values, Context context)
                 throws  IOException, InterruptedException {
-            System.out.println();
-            System.out.println(key);
             ArrayList<StringSort>    list = new ArrayList<StringSort>();
             Iterator<Text> iter = values.iterator();
             while(iter.hasNext()) {
@@ -180,14 +173,12 @@ public class WordCount {
             tm.put(key, list);
 
             for(StringSort ss: list) {
-                /*
-                if (g_counter > 20) {
+                if (g_counter > 2000) {
                     break;
                 }
-                */
                 //System.out.println(ss.getName());
                 //global_list.add(ss);
-                context.write(key, new Text(ss.getName()));
+                context.write(new Text(ss.getName()), key);
                 g_counter++;
             }
 
@@ -223,6 +214,7 @@ public class WordCount {
         job.setReducerClass(IntSumReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
+        job.setNumReduceTasks(10);
         Path outputPath = new Path(args[1]);
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, outputPath);
@@ -235,11 +227,13 @@ public class WordCount {
             job2.setJarByClass(WordCount.class);
             job2.setMapperClass(SortMapper.class);
             job2.setReducerClass(SortReducer.class);
+            job2.setMapOutputKeyClass(IntWritable.class);
+            job2.setMapOutputValueClass(Text.class);
             // Sorts by frequency
             job2.setSortComparatorClass(DescendingIntWritableComparable.DecreasingComparator.class);
             job2.setNumReduceTasks(1);
-            job2.setOutputKeyClass(IntWritable.class);
-            job2.setOutputValueClass(Text.class);
+            job2.setOutputKeyClass(Text.class);
+            job2.setOutputValueClass(IntWritable.class);
             Path outputPath1 = new Path(args[2]);
             FileInputFormat.addInputPath(job2, outputPath);
             FileOutputFormat.setOutputPath(job2, outputPath1);
